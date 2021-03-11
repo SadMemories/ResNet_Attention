@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="37ecc241-dd48-4c69-93b1-23d930f1fc22" name="ResNet_CBAM (project level)">
+        <fileTransfer accessType="SFTP" host="172.21.78.232" port="22" sshConfigId="f8c3e433-3ff5-404e-8a0d-258611ff548e" sshConfig="ResNet_CBAM" />
+      </webServer>
+    </option>
+  </component>
+</project>
