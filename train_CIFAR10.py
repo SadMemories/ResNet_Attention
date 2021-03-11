@@ -54,11 +54,10 @@ def main():
         model = ResidualNet('CIFAR10', args.depth, 10, args.att_type)
 
     # recommended to use DistributedDataParallel
-    '''
-    if args.ngpu > 1:
-        print("using {} gpus to train".format(args.ngpu))
-        model = torch.nn.DataParallel(model, device_ids=list(range(args.ngpu)))
-    '''
+    if torch.cuda.device_count() > 1:
+        print("using {} gpus to train".format(torch.cuda.device_count()))
+        model = torch.nn.DataParallel(model, device_ids=list(range(torch.cuda.device_count())))
+
     model = model.to(device)
     print('model:')
     print(model)
