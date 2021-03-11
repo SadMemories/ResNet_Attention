@@ -15,7 +15,7 @@ class SELayer(nn.Module):
         )
 
     def forward(self, x):
-        b, c, _, _ = x.size()
+        b, c, _, _ = x.size()  # x.size()
         out = self.avg_pool(x).view(b, c)
         out = self.fc(out).view(b, c, 1, 1)
 
