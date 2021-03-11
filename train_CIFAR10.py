@@ -17,11 +17,11 @@ from torch.utils.tensorboard import SummaryWriter
 parser = argparse.ArgumentParser(description='CIFAR10 Training')
 parser.add_argument('--arch', '-a', metavar='ARCH', default='resnet', help='model architesture')
 parser.add_argument('--depth', default=50, type=int, help='model depth')
-parser.add_argument('--ngpu', default=1, type=int, help='number of gpus to use')
+parser.add_argument('--device', default=0, type=str, help='index of gpu, i,e:0,1')
 parser.add_argument('--epochs', default=60, type=int, help='number of total epochs to run')
 parser.add_argument('--batch_size', default=128, type=int, help='mini-batch size')
 parser.add_argument('--resume', default='', type=str, help='path to latest checkpoint')
-parser.add_argument('--att-type', default='None', choices=['CBAM'], type=str)
+parser.add_argument('--att_type', default='None', choices=['cbam', 'se'], type=str)
 parser.add_argument("--prefix", type=str, required=True, metavar='PFX', help='prefix for logging & checkpoint saving')
 
 seed = 1000  # Fixed random seed
@@ -45,25 +45,30 @@ def main():
     torch.cuda.manual_seed_all(seed)
     random.seed(seed)
 
+    device = select_device(args.device)
+
     if args.arch == 'resnet':
 
         # use CIFAR10 data set
+        # print(args.att_type)
         model = ResidualNet('CIFAR10', args.depth, 10, args.att_type)
 
     # recommended to use DistributedDataParallel
+    '''
     if args.ngpu > 1:
         print("using {} gpus to train".format(args.ngpu))
         model = torch.nn.DataParallel(model, device_ids=list(range(args.ngpu)))
-    model = model.cuda()
+    '''
+    model = model.to(device)
     print('model:')
     print(model)
 
     # add model architecture to graph
-    tmp_input = torch.zeros([16, 3, 32, 32]).cuda()
+    tmp_input = torch.zeros([16, 3, 32, 32]).to(device)
     writer.add_graph(model, tmp_input)
 
     # define loss function and optimizer
-    criterion = nn.CrossEntropyLoss().cuda()
+    criterion = nn.CrossEntropyLoss().to(device)
     optimizer = torch.optim.SGD(model.parameters(), lr, momentum=0.9, weight_decay=1e-4)
 
     # get the number of model parameters
@@ -105,13 +110,13 @@ def main():
         adjust_learning_rate(optimizer, epoch)
 
         # train for one epoch
-        loss, top1_acc, top5_acc = train(train_loader, model, criterion, optimizer, epoch, args.epochs)
+        loss, top1_acc, top5_acc = train(train_loader, model, criterion, optimizer, epoch, args.epochs, device)
         writer.add_scalar('train/epoch loss', loss, epoch+1)
         writer.add_scalar('train/top1 acc', top1_acc, epoch+1)
         writer.add_scalar('train/top5 acc', top5_acc, epoch+1)
 
         # evaluate on validation set
-        prec1, prec5, val_loss = validate(test_loader, model, criterion, epoch, args.epochs)
+        prec1, prec5, val_loss = validate(test_loader, model, criterion, epoch, args.epochs, device)
         writer.add_scalar('val/loss', val_loss, epoch+1)
         writer.add_scalar('val/top1 acc', prec1, epoch + 1)
         writer.add_scalar('val/top5 acc', prec5, epoch + 1)
@@ -129,7 +134,19 @@ def main():
     writer.close()
 
 
-def train(train_loader, model, criterion, optimizer, epoch, epochs):
+def select_device(device):
+    cpu_request = (device == 'cpu')
+
+    if device and not cpu_request:
+        os.environ['CUDA_VISIBLE_DEVICES'] = device
+        assert torch.cuda.is_available(), 'CUDA unavailable, invalid device requested'
+
+    cuda = False if cpu_request else torch.cuda.is_available()
+
+    return torch.device('cuda:0' if cuda else 'cpu')
+
+
+def train(train_loader, model, criterion, optimizer, epoch, epochs, device):
     batch_time = AverageMeter()
     data_time = AverageMeter()
     losses = AverageMeter()
@@ -146,8 +163,8 @@ def train(train_loader, model, criterion, optimizer, epoch, epochs):
         # measure data loading time
         data_time.update(time.time() - end)
 
-        target = target.cuda()
-        input = input.cuda()
+        target = target.to(device)
+        input = input.to(device)
 
         output = model(input)
         loss = criterion(output, target)
@@ -184,7 +201,7 @@ def train(train_loader, model, criterion, optimizer, epoch, epochs):
     return losses.avg, top1.avg / 100.0, top5.avg / 100.0
 
 
-def validate(test_loader, model, criterion, epoch, epochs):
+def validate(test_loader, model, criterion, epoch, epochs, device):
     batch_time = AverageMeter()
     losses = AverageMeter()
     top1 = AverageMeter()
@@ -197,8 +214,8 @@ def validate(test_loader, model, criterion, epoch, epochs):
     s = ('%30s' + '%10s' * 3) % ('BatchTime', 'Loss', 'Prec@1', 'Prec@5')
     test_bar = tqdm(test_loader, desc=s)
     for i, (input, target) in enumerate(test_bar):
-        target = target.cuda()
-        input = input.cuda()
+        target = target.to(device)
+        input = input.to(device)
 
         # compute output
         output = model(input)

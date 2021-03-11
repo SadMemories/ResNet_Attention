@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn import init
 from cbam import *
+from se import *
 from torch.utils.tensorboard import SummaryWriter
 
 
@@ -25,6 +26,8 @@ class BasicBlock(nn.Module):
 
         if att_type == 'cbam':
             self.attention = CBAM(planes, 16)
+        elif att_type == 'se':
+            self.attention = SELayer(planes, 16)
         else:  # this will add se or other attention module
             self.attention = None
 
@@ -68,6 +71,8 @@ class Bottleneck(nn.Module):
 
         if att_type == 'cbam':
             self.attention = CBAM(planes * 4, 16)
+        elif att_type == 'se':
+            self.attention = SELayer(planes * 4, 16)
         else:
             self.attention = None
 
