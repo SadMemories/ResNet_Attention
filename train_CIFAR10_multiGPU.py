@@ -38,7 +38,7 @@ if not os.path.exists('./checkpoints'):
 
 def main():
     if torch.cuda.is_available() is False:
-        raise EnvironmentError('not find CPU device for training.')
+        raise EnvironmentError('not find CPU device for training')
 
     args = parser.parse_args()
     print('args ', args)
