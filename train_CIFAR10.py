@@ -25,7 +25,7 @@ parser.add_argument('--att_type', default='None', choices=['cbam', 'se'], type=s
 parser.add_argument("--prefix", type=str, required=True, metavar='PFX', help='prefix for logging & checkpoint saving')
 
 seed = 1000  # Fixed random seed
-lr = 0.01  # learning rate
+lr = 0.1  # learning rate
 print_freq = 10  # print frequency
 writer = SummaryWriter()
 
@@ -92,14 +92,22 @@ def main():
 
     num_workers = min([os.cpu_count(), args.batch_size if args.batch_size > 0 else 0, 8])
 
-    transform = transforms.Compose([
+    train_transform = transforms.Compose([
+        transforms.RandomCrop(32, padding=4),
+        transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
-        transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
+        transforms.Normalize(mean=(0.4914, 0.4822, 0.4465), std=(0.2023, 0.1994, 0.2010))  # CIFAR10's mean and std
     ])
+
+    test_transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize(mean=(0.4914, 0.4822, 0.4465), std=(0.2023, 0.1994, 0.2010))  # CIFAR10's mean and std
+    ])
+
     train_set = torchvision.datasets.CIFAR10(root='./data', train=True,
-                                            download=False, transform=transform)
+                                            download=False, transform=train_transform)
     test_set = torchvision.datasets.CIFAR10(root='./data', train=False,
-                                           download=False, transform=transform)
+                                           download=False, transform=test_transform)
     train_loader = torch.utils.data.DataLoader(train_set, batch_size=args.batch_size,
                                                shuffle=True, num_workers=num_workers)
     test_loader = torch.utils.data.DataLoader(test_set, batch_size=args.batch_size,
