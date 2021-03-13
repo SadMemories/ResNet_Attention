@@ -44,6 +44,6 @@ class CBAM(nn.Module):
         self.SpatialAtt = SpatialAttention(kernel_size)
 
     def forward(self, x):
-        x = self.ChannelAtt(x) #
+        x = self.ChannelAtt(x)
         x = self.SpatialAtt(x)
         return x
