@@ -21,6 +21,7 @@ The model's backbone is ResNet. In our training, we use CIFAR10 as our dataset.
 # Validation Result
 * ResNet50         (trained for 160 epochs) ACC@1=93.41% ACC@5=99.84%
 * ResNet50+SE (trained for 160 epochs) ACC@1=94.01% ACC@5=99.89%
+* ResNet50+CBAN(trained for 160 epochs) ACC@1=93.41% ACC@5=99.90%
 
 # Result Graph
 
